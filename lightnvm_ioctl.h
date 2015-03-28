@@ -3,23 +3,42 @@
 
 typedef unsigned long long sector_t;
 
-struct block_descriptor
+struct nvm_channel
+{
+	unsigned int gran_write;
+	unsigned int gran_read;
+	unsigned int gran_erase;
+};
+
+struct nvm_user_api_lun_channel
+{
+        unsigned long int lun_idx;
+        unsigned short int chnl_idx;
+
+        unsigned int gran_write;
+        unsigned int gran_read;
+        unsigned int gran_erase;
+};
+
+struct nvm_lun
 {
 	unsigned long nr_blocks;
 
 	unsigned long nr_pages_per_blk;
 
-	unsigned long page_size;
+	unsigned short int nchannels;
+
+	struct nvm_channel *channels;
 };
 
 struct nvm_descriptor
 {
 	unsigned long nr_luns;
 
-	struct block_descriptor *blk_desc;
+	struct nvm_lun *luns;
 };
 
-struct nvm_user_block
+struct nvm_api_block
 {
     unsigned long lun;
 
@@ -38,5 +57,6 @@ struct nvm_user_block
 #define NVMPAGESNRGET       21530
 #define NVMBLOCKGETBYADDR   21531
 #define NVMPAGESIZEGET      21532
+#define NVMCHANNELSNRGET    21533
 
 #endif
