@@ -1,5 +1,5 @@
-#ifndef _LIGHTNVM_IOCTL_H_
-#define _LIGHTNVM_IOCTL_H_
+#ifndef _TYPEDEFS_H_
+#define _TYPEDEFS_H_
 
 typedef unsigned long long sector_t;
 
@@ -48,15 +48,5 @@ struct nvm_api_block
 
     void *internals;
 };
-
-#define NVMBLOCKPUT         21525
-#define NVMBLOCKRRGET       21526
-#define NVMLUNSNRGET        21527
-#define NVMBLOCKSNRGET      21528
-#define NVMBLOCKERASE       21529
-#define NVMPAGESNRGET       21530
-#define NVMBLOCKGETBYADDR   21531
-#define NVMPAGESIZEGET      21532
-#define NVMCHANNELSNRGET    21533
 
 #endif

@@ -1,14 +1,24 @@
-all:	./compile/obj/lightnvm_driver.o	\
+all:	./compile/obj/driver.o	\
+		./compile/obj/ioctl.o	\
+		./compile/obj/rw.o		\
 		
-		$(CC) $(LDFLAGS)	./compile/obj/lightnvm_driver.o\
+		$(CC) $(LDFLAGS)	./compile/obj/driver.o	\
+							./compile/obj/ioctl.o	\
+							./compile/obj/rw.o		\
 		\
 		-o	\
 		\
 		./compile/bin/driver
 
 		
-./compile/obj/lightnvm_driver.o:	./lightnvm_driver.c
-	$(CC) $(CCFLAGS) -c				./lightnvm_driver.c		-o ./compile/obj/lightnvm_driver.o
+./compile/obj/driver.o:				./driver.c
+	$(CC) $(CCFLAGS) -c				./driver.c		-o ./compile/obj/driver.o
+	
+./compile/obj/ioctl.o:				./ioctl/ioctl.c
+	$(CC) $(CCFLAGS) -c				./ioctl/ioctl.c	-o ./compile/obj/ioctl.o
+	
+./compile/obj/rw.o:					./rw/rw.c
+	$(CC) $(CCFLAGS) -c				./rw/rw.c		-o ./compile/obj/rw.o
 
 	
 clean:
