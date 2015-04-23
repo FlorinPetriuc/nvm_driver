@@ -1,12 +1,12 @@
 #include "../driver.h"
 
-FILE *rw_init(const char *file_name, const char *mode)
+int rw_init(const char *file_name)
 {
-	FILE *ret;
+	int ret;
 
-	ret = popen(file_name, mode);
+	ret = open(file_name, O_RDWR);
 
-	if(ret == NULL)
+	if(ret < 0)
 	{
 		PRINT_ERROR("");
 	}
@@ -14,38 +14,52 @@ FILE *rw_init(const char *file_name, const char *mode)
 	return ret;
 }
 
-int do_write(FILE *file, const char *data)
+int do_write(const int file, const char *data, const int data_len)
 {
-	if(fputs(data, file) == EOF)
+	if(lseek(file, 0, SEEK_SET) != 0)
 	{
-		PRINT("");
+		goto err;
+	}
 
-		do_clean(file);
-
-		PRINT_ERROR("");
-
-		return 1;
+	if(write(file, data, data_len) < 0)
+	{
+		goto err;
 	}
 
 	return 0;
+
+err:
+	do_clean(file);
+
+	PRINT_ERROR("");
+
+	return 1;
 }
 
-int do_read(FILE *file, char *data, const int len)
+int do_read(const int file, char *data, const int len)
 {
-	if(fgets(data, len, file) == NULL)
+	if(lseek(file, 0, SEEK_SET) != 0)
 	{
-		do_clean(file);
+		goto err;
+	}
 
-		PRINT_ERROR("");
-
-		return 1;
+	if(read(file, data, len) < 0)
+	{
+		goto err;
 	}
 	data[len - 1] = '\0';
 
 	return 0;
+
+err:
+	do_clean(file);
+
+	PRINT_ERROR("");
+
+	return 1;
 }
 
-void do_clean(FILE *file)
+void do_clean(const int file)
 {
-	pclose(file);
+	close(file);
 }

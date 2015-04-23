@@ -1,59 +1,131 @@
 #include "driver.h"
 
-int main(void)
+int test_ioctl(const char *file_name)
 {
-	int fd;
+	int ret = 0;
 
-	char data[100];
-
-	FILE *test;
-
-	const char *file_name = "/dev/test";
-
-	fd = ioctl_init(file_name);
+	int fd = ioctl_init(file_name);
 
 	if(fd < 0)
 	{
 		PRINT_ERROR("ioctl_init");
 
-		goto RW_OPS;
+		return 1;
 	}
 
-	ioctl_ops_test(fd);
+	if(ioctl_ops_test(fd))
+	{
+		PRINT_ERROR("ioctl ops failed");
+
+		ret = 1;
+	}
+
 	ioctl_clean(fd);
 
-RW_OPS:
+	return ret;
+}
 
-	test = rw_init("/dev/test", "w");
+int test_write(const char *file_name)
+{
+	int i;
 
-	if(test == NULL)
+	int fd;
+
+	char data[4096];
+
+	for(i = 0; i < 4096; ++i)
 	{
-		goto exit;
+		data[i] = 't';
 	}
 
-	if(do_write(test, "t"))
+	fd = rw_init(file_name);
+
+	if(fd < 0)
 	{
-		goto exit;
+		PRINT_ERROR("rw init error");
+
+		return 1;
 	}
 
-	do_clean(test);
-
-	test = rw_init("/dev/test", "r");
-
-	if(test == NULL)
+	if(do_write(fd, data, 4096))
 	{
-		goto exit;
+		PRINT_ERROR("rw write error");
+
+		return 1;
 	}
 
-	if(do_read(test, data, 100))
+	do_clean(fd);
+
+	return 0;
+}
+
+int test_read(const char *file_name)
+{
+	int fd;
+
+	char data[4097];
+
+	int i;
+
+	for(i = 0; i < 4097; ++i)
 	{
-		goto exit;
+		data[i] = 'u';
 	}
 
-	do_clean(test);
+	fd = rw_init(file_name);
 
-	PRINT("ENDING %s", data);
+	if(fd < 0)
+	{
+		PRINT_ERROR("rw init error");
 
-exit:
+		return 1;
+	}
+
+	if(do_read(fd, data, 4096))
+	{
+		PRINT_ERROR("rw read error");
+
+		return 1;
+	}
+	data[4096] = '\0';
+
+	PRINT("GOT %s", data);
+
+	do_clean(fd);
+
+	return 0;
+}
+
+int main(void)
+{
+	const char *file_name = "/dev/test";
+
+	if(test_ioctl(file_name))
+	{
+		PRINT_ERROR("ioctl error");
+
+		return 1;
+	}
+
+	PRINT("write start");
+
+	if(test_write(file_name))
+	{
+		PRINT_ERROR("write error");
+
+		return 1;
+	}
+
+	PRINT("read start");
+
+	if(test_read(file_name))
+	{
+		PRINT_ERROR("read error");
+
+		return 1;
+	}
+
+	PRINT("SUCCESS");
+
 	return 0;
 }

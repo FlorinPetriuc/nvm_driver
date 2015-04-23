@@ -117,7 +117,7 @@ exit:
 
 int ioctl_ops_test(const int fd)
 {
-	int ret;
+	int ret = 0;
 
 	unsigned long i;
 
@@ -172,9 +172,12 @@ void ioctl_clean(const int fd)
 
 	close(fd);
 
-	for(i = 0; i < nvm_d.nr_luns; ++i)
+	if(nvm_d.nr_luns > 0)
 	{
-		free(nvm_d.luns[i].channels);
+		for(i = 0; i < nvm_d.nr_luns; ++i)
+		{
+			free(nvm_d.luns[i].channels);
+		}
+		free(nvm_d.luns);
 	}
-	free(nvm_d.luns);
 }
