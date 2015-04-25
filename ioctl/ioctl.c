@@ -1,183 +1,195 @@
 #include "../driver.h"
 
-static struct nvm_descriptor nvm_d;
-
-int ioctl_init(const char *file)
+struct nvm *ioctl_init(const char *file)
 {
-	int fd;
+	struct nvm *api = NULL;
+
 	int ret;
 
 	unsigned long i;
+	unsigned long j;
 
-	unsigned short int j;
+	struct nba_channel chnl_desc;
 
-	struct nvm_user_api_lun_channel chnl_desc;
+	ALLOC_MEMORY(api, 1, struct nvm);
 
-	fd = open("/dev/test", O_RDWR);
+	api->fd = open("/dev/test", O_RDWR);
 
-	if (fd < 0)
+	if (api->fd < 0)
 	{
 		PRINT_ERROR("");
 
-		goto exit;
+		goto err;
 	}
 
-	ret = ioctl(fd, NVMLUNSNRGET, &nvm_d.nr_luns);
+	ret = ioctl(api->fd, NVMLUNSNRGET, &api->nr_luns);
 
 	if(ret != 0)
 	{
 		PRINT_ERROR("%d", ret);
 
-		goto exit;
+		goto err;
 	}
 
-	PRINT("We have %lu luns", nvm_d.nr_luns);
+	PRINT("We have %lu luns", api->nr_luns);
 
-	ALLOC_MEMORY(nvm_d.luns, nvm_d.nr_luns, struct nvm_lun);
+	ALLOC_MEMORY(api->luns, api->nr_luns, struct nvm_lun);
 
-	for(i = 0; i < nvm_d.nr_luns; ++i)
+	for(i = 0; i < api->nr_luns; ++i)
 	{
-		nvm_d.luns[i].nr_blocks = i;
+		api->luns[i].nr_blocks = i;
 
-		ret = ioctl(fd, NVMBLOCKSNRGET, &nvm_d.luns[i].nr_blocks);
-
-		if(ret != 0)
-		{
-			PRINT_ERROR("%d", ret);
-
-			goto exit;
-		}
-
-		PRINT("Lun %lu has %lu blocks", i, nvm_d.luns[i].nr_blocks);
-
-		nvm_d.luns[i].nr_pages_per_blk = i;
-
-		ret = ioctl(fd, NVMPAGESNRGET, &nvm_d.luns[i].nr_pages_per_blk);
+		ret = ioctl(api->fd, NVMBLOCKSNRGET, &api->luns[i].nr_blocks);
 
 		if(ret != 0)
 		{
 			PRINT_ERROR("%d", ret);
 
-			goto exit;
+			goto err;
 		}
 
-		PRINT("Lun %lu has %lu pages per block", i, nvm_d.luns[i].nr_pages_per_blk);
+		PRINT("Lun %lu has %lu blocks", i, api->luns[i].nr_blocks);
 
-		nvm_d.luns[i].nchannels = i;
+		ALLOC_MEMORY(api->luns[i].blocks, api->luns[i].nr_blocks, struct nvm_block);
 
-		ret = ioctl(fd, NVMCHANNELSNRGET, &nvm_d.luns[i].nchannels);
+		for(j = 0; j < api->luns[i].nr_blocks; ++j)
+		{
+			api->luns[i].blocks[j].id = j;
+			api->luns[i].blocks[j].lun = i;
+
+			ret = ioctl(api->fd, NVMBLOCKGETBYID, &api->luns[i].blocks[j]);
+
+			//PRINT("Block %lu has physical address %llu", j, api->luns[i].blocks[j].phys_addr);
+		}
+
+		api->luns[i].nr_pages_per_blk = i;
+
+		ret = ioctl(api->fd, NVMPAGESNRGET, &api->luns[i].nr_pages_per_blk);
 
 		if(ret != 0)
 		{
 			PRINT_ERROR("%d", ret);
 
-			goto exit;
+			goto err;
 		}
 
-		PRINT("Lun %lu has %hu channels", i, nvm_d.luns[i].nchannels);
+		PRINT("Lun %lu has %lu pages per block", i, api->luns[i].nr_pages_per_blk);
 
-		ALLOC_MEMORY(nvm_d.luns[i].channels, nvm_d.luns[i].nchannels, struct nvm_channel);
+		api->luns[i].nchannels = i;
+
+		ret = ioctl(api->fd, NVMCHANNELSNRGET, &api->luns[i].nchannels);
+
+		if(ret != 0)
+		{
+			PRINT_ERROR("%d", ret);
+
+			goto err;
+		}
+
+		PRINT("Lun %lu has %hu channels", i, api->luns[i].nchannels);
+
+		ALLOC_MEMORY(api->luns[i].channels, api->luns[i].nchannels, struct nvm_channel);
 
 		chnl_desc.lun_idx = i;
 
-		for(j = 0; j < nvm_d.luns[i].nchannels; ++j)
+		for(j = 0; j < api->luns[i].nchannels; ++j)
 		{
 			chnl_desc.chnl_idx = j;
 
-			ret = ioctl(fd, NVMPAGESIZEGET, &chnl_desc);
+			ret = ioctl(api->fd, NVMPAGESIZEGET, &chnl_desc);
 
 			if(ret != 0)
 			{
 				PRINT_ERROR("%d", ret);
 
-				goto exit;
+				goto err;
 			}
 
-			nvm_d.luns[i].channels[j].gran_erase = chnl_desc.gran_erase;
-			nvm_d.luns[i].channels[j].gran_read = chnl_desc.gran_read;
-			nvm_d.luns[i].channels[j].gran_write = chnl_desc.gran_write;
+			api->luns[i].channels[j].gran_erase = chnl_desc.gran_erase;
+			api->luns[i].channels[j].gran_read = chnl_desc.gran_read;
+			api->luns[i].channels[j].gran_write = chnl_desc.gran_write;
 
-			PRINT("Lun %lu channel %hu has %u writes %u reads and %u erase", i, nvm_d.luns[i].nchannels,
-																				nvm_d.luns[i].channels[j].gran_write,
-																				nvm_d.luns[i].channels[j].gran_read,
-																				nvm_d.luns[i].channels[j].gran_erase);
+			PRINT("Lun %lu channel %hu has %u writes %u reads and %u erase", i, api->luns[i].nchannels,
+																				api->luns[i].channels[j].gran_write,
+																				api->luns[i].channels[j].gran_read,
+																				api->luns[i].channels[j].gran_erase);
 		}
 	}
 
-exit:
-	if(ret)
-	{
-		close(fd);
+	return api;
 
-		return -1;
+err:
+	if(api)
+	{
+		close(api->fd);
+
+		free(api);
+
+		return NULL;
 	}
 
-	return fd;
+	return NULL;
 }
 
-int ioctl_ops_test(const int fd)
+int ioctl_test(struct nvm *api)
 {
-	int ret = 0;
+	unsigned long block_id;
 
-	unsigned long i;
+	unsigned long lun_id;
 
-	struct nvm_api_block block;
+	struct nvm_block test_block;
 
-	for(i = 0; i < nvm_d.nr_luns; ++i)
+	int ret;
+	int test_cnt;
+
+	for(test_cnt = 0; test_cnt < 10; ++test_cnt)
 	{
-		block.lun = i;
+		lun_id = rand() % api->nr_luns;
+		block_id = rand() % api->luns[lun_id].nr_blocks;
 
-		ret = ioctl(fd, NVMBLOCKRRGET, &block);
+		test_block.lun = lun_id;
+		test_block.phys_addr = api->luns[lun_id].blocks[block_id].phys_addr;
 
-		if(ret != 0)
+		ret = ioctl(api->fd, NVMBLOCKGETBYADDR, &test_block);
+
+		if(ret)
 		{
-			PRINT_ERROR("%d", ret);
-
-			goto exit;
+			PRINT_ERROR("");
+			goto err;
 		}
 
-		PRINT("Got RR block %lu", block.id);
-
-		ret = ioctl(fd, NVMBLOCKPUT, &block);
-
-		if(ret != 0)
+		if(test_block.id != block_id)
 		{
-			PRINT_ERROR("%d", ret);
-
-			goto exit;
+			PRINT_ERROR("%lu vs %lu", block_id, test_block.id);
+			goto err;
 		}
-
-		PRINT("Put block");
-
-		ret = ioctl(fd, NVMBLOCKERASE, &block);
-
-		if(ret != 0)
-		{
-			PRINT_ERROR("%d", ret);
-
-			goto exit;
-		}
-
-		PRINT("Erase block");
 	}
 
-exit:
-	return ret;
+	return 0;
 
+err:
+	return 1;
 }
 
-void ioctl_clean(const int fd)
+void ioctl_clean(struct nvm *api)
 {
 	unsigned long i;
 
-	close(fd);
-
-	if(nvm_d.nr_luns > 0)
+	if(!api)
 	{
-		for(i = 0; i < nvm_d.nr_luns; ++i)
-		{
-			free(nvm_d.luns[i].channels);
-		}
-		free(nvm_d.luns);
+		return;
 	}
+
+	close(api->fd);
+
+	if(api->nr_luns > 0)
+	{
+		for(i = 0; i < api->nr_luns; ++i)
+		{
+			free(api->luns[i].channels);
+		}
+		free(api->luns);
+	}
+
+	free(api);
 }

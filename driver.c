@@ -2,27 +2,25 @@
 
 int test_ioctl(const char *file_name)
 {
-	int ret = 0;
+	struct nvm *api = ioctl_init(file_name);
 
-	int fd = ioctl_init(file_name);
-
-	if(fd < 0)
+	if(!api)
 	{
 		PRINT_ERROR("ioctl_init");
 
 		return 1;
 	}
 
-	if(ioctl_ops_test(fd))
+	if(ioctl_test(api))
 	{
-		PRINT_ERROR("ioctl ops failed");
+		PRINT_ERROR("ioctl_test");
 
-		ret = 1;
+		return 1;
 	}
 
-	ioctl_clean(fd);
+	ioctl_clean(api);
 
-	return ret;
+	return 0;
 }
 
 int test_write(const char *file_name)

@@ -8,12 +8,14 @@
 #define NVMBLOCKERASE       21529
 #define NVMPAGESNRGET       21530
 #define NVMBLOCKGETBYADDR   21531
-#define NVMPAGESIZEGET      21532
-#define NVMCHANNELSNRGET    21533
+#define NVMBLOCKGETBYID	    21532
+#define NVMPAGESIZEGET      21533
+#define NVMCHANNELSNRGET    21534
 
-int ioctl_init(const char *file);
-int ioctl_ops_test(const int fd);
+struct nvm *ioctl_init(const char *file);
 
-void ioctl_clean(const int fd);
+int ioctl_test(struct nvm *api);
+
+void ioctl_clean(struct nvm *api);
 
 #endif
