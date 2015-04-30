@@ -16,5 +16,8 @@
 #include "driver.h"
 #include "ioctl/ioctl.h"
 #include "rw/rw.h"
+#include "tests/buffer_test.h"
+#include "tests/stream_test.h"
+#include "tests/ioctl_test.h"
 
 #endif
