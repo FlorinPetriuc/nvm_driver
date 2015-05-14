@@ -1,8 +1,53 @@
 #include "driver.h"
 
-int main(void)
+static int work_info(const char *file_name)
 {
-	const char *file_name = "/dev/test";
+	struct nvm *api;
+
+	PRINT("ERASING ALL BLOCKS");
+
+	api = ioctl_init(file_name);
+	if(!api)
+	{
+		PRINT_ERROR("ioctl error");
+
+		return 1;
+	}
+}
+
+static int work_erase_all(const char *file_name)
+{
+	struct nvm *api;
+
+	PRINT("ERASING ALL BLOCKS");
+
+	api = ioctl_init(file_name);
+	if(!api)
+	{
+		PRINT_ERROR("ioctl error");
+
+		return 1;
+	}
+
+	if(ioctl_erase_all(api))
+	{
+		PRINT_ERROR("ioctl error");
+
+		ioctl_clean(api);
+
+		return 1;
+	}
+
+	ioctl_clean(api);
+
+	PRINT("ERASE SUCCESS");
+
+	return 0;
+}
+
+static int work_test_all(const char *file_name)
+{
+	PRINT("RUNNING TEST CASES");
 
 	if(test_ioctl(file_name))
 	{
@@ -50,6 +95,65 @@ int main(void)
 	}
 
 	PRINT("STREAM SUCCESS");
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	const char *file_name = "/dev/test";
+
+	unsigned char do_clear = 0;
+	unsigned char do_info = 0;
+	unsigned char do_self_test = 0;
+
+	int i;
+
+	for(i = 1; i < argc; ++i)
+	{
+		if(strcmp(argv[i], "clear") == 0)
+		{
+			do_clear = 1;
+		}
+		else if(strcmp(argv[i], "test") == 0)
+		{
+			do_self_test = 1;
+		}
+		else if(strcmp(argv[i], "info") == 0)
+		{
+			do_info = 1;
+		}
+		else if(argv[i][0] == '/')
+		{
+			file_name = argv[i];
+		}
+	}
+
+	PRINT("using %s", file_name);
+
+	if(do_info)
+	{
+		if(work_info(file_name))
+		{
+			return 1;
+		}
+	}
+
+	if(do_clear)
+	{
+		if(work_erase_all(file_name))
+		{
+			return 1;
+		}
+	}
+
+	if(do_self_test)
+	{
+		if(work_test_all(file_name))
+		{
+			return 1;
+		}
+	}
 
 	return 0;
 }

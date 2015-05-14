@@ -10,7 +10,7 @@ int test_write(const char *file_name)
 
 	for(i = 0; i < 4096; ++i)
 	{
-		data[i] = 't';
+		data[i] = 'b';
 	}
 
 	fd = rw_init(file_name);

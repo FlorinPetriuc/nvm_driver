@@ -10,7 +10,7 @@ int test_write_stream(const char *file_name)
 
 	for(i = 0; i < 4096; ++i)
 	{
-		data[i] = 't';
+		data[i] = 's';
 	}
 	data[4096] = '\0';
 

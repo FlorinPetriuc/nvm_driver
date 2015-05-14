@@ -13,7 +13,7 @@ struct nvm *ioctl_init(const char *file)
 
 	ALLOC_MEMORY(api, 1, struct nvm);
 
-	api->fd = open("/dev/test", O_RDWR);
+	api->fd = open(file, O_RDWR);
 
 	if (api->fd < 0)
 	{
@@ -59,7 +59,12 @@ struct nvm *ioctl_init(const char *file)
 
 			ret = ioctl(api->fd, NVMBLOCKGETBYID, &api->luns[i].blocks[j]);
 
-			//PRINT("Block %lu has physical address %llu", j, api->luns[i].blocks[j].phys_addr);
+			if(ret)
+			{
+				PRINT_ERROR("%d", ret);
+
+				goto err;
+			}
 		}
 
 		api->luns[i].nr_pages_per_blk = i;
@@ -131,7 +136,7 @@ err:
 	return NULL;
 }
 
-int ioctl_test(struct nvm *api)
+int ioctl_get_test(struct nvm *api)
 {
 	unsigned long block_id;
 
@@ -162,6 +167,39 @@ int ioctl_test(struct nvm *api)
 		{
 			PRINT_ERROR("%lu vs %lu", block_id, test_block.id);
 			goto err;
+		}
+	}
+
+	return 0;
+
+err:
+	return 1;
+}
+
+int ioctl_erase_all(struct nvm *api)
+{
+	unsigned long i;
+	unsigned long j;
+
+	int ret;
+
+	struct nvm_block *erase_block;
+
+	for(i = 0; i < api->nr_luns; ++i)
+	{
+		for(j = 0; j < api->luns[i].nr_blocks; ++j)
+		{
+			PRINT("Erasing lun %lu : block %lu", i, j);
+
+			erase_block = &api->luns[i].blocks[j];
+
+			ret = ioctl(api->fd, NVMBLOCKERASE, erase_block);
+
+			if(ret)
+			{
+				PRINT_ERROR("");
+				goto err;
+			}
 		}
 	}
 

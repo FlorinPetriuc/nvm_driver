@@ -14,7 +14,9 @@
 
 struct nvm *ioctl_init(const char *file);
 
-int ioctl_test(struct nvm *api);
+int ioctl_get_test(struct nvm *api);
+
+int ioctl_erase_all(struct nvm *api);
 
 void ioctl_clean(struct nvm *api);
 

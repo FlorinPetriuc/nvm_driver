@@ -11,7 +11,14 @@ int test_ioctl(const char *file_name)
 		return 1;
 	}
 
-	if(ioctl_test(api))
+	if(ioctl_erase_all(api))
+	{
+		PRINT_ERROR("ioctl_test");
+
+		return 1;
+	}
+
+	if(ioctl_get_test(api))
 	{
 		PRINT_ERROR("ioctl_test");
 
